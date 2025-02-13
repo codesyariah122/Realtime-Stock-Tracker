@@ -5,16 +5,21 @@ import {
   ComboboxInput,
   ComboboxOption,
   ComboboxOptions,
+  ComboboxButton,
 } from "@headlessui/react";
+import { CheckIcon, ChevronDownIcon } from "@heroicons/react/20/solid";
 import {
-  LineChart,
+  ComposedChart,
   Line,
+  Area,
+  Bar,
+  Scatter,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-  Area,
+  Legend,
 } from "recharts";
 import { useStockData } from "@/hooks";
 
@@ -37,7 +42,6 @@ export default function StockChart({ symbol }: { symbol: string }) {
   const [selectedSymbol, setSelectedSymbol] = useState<string>(symbol);
   const { realTimeData = [], refetch } = useStockData(selectedSymbol);
 
-  // Auto-refresh data setiap 5 detik
   useEffect(() => {
     const interval = setInterval(() => {
       refetch();
@@ -63,12 +67,18 @@ export default function StockChart({ symbol }: { symbol: string }) {
         }}
       >
         <div className="relative w-full">
-          <ComboboxInput
-            placeholder="Cari atau ketik simbol saham..."
-            className="w-full border p-2 rounded"
-            value={inputValue}
-            onChange={(event) => setInputValue(event.target.value)}
-          />
+          <div className="relative flex items-center">
+            <ComboboxInput
+              placeholder="Cari atau ketik simbol saham..."
+              className="w-full border p-2 rounded pr-10"
+              value={inputValue}
+              onChange={(event) => setInputValue(event.target.value)}
+            />
+            <ComboboxButton className="absolute right-2">
+              <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+            </ComboboxButton>
+          </div>
+
           {filteredSymbols.length > 0 && (
             <ComboboxOptions className="absolute left-0 w-full bg-white border rounded mt-1 shadow-lg z-10">
               {filteredSymbols.map((symbol) => (
@@ -76,12 +86,19 @@ export default function StockChart({ symbol }: { symbol: string }) {
                   key={symbol}
                   value={symbol}
                   className={({ active }) =>
-                    `cursor-pointer p-2 ${
+                    `cursor-pointer flex justify-between items-center p-2 ${
                       active ? "bg-gray-200 text-black" : "bg-white"
                     }`
                   }
                 >
-                  {symbol}
+                  {({ selected }) => (
+                    <>
+                      <span>{symbol}</span>
+                      {selected && (
+                        <CheckIcon className="w-5 h-5 text-green-500" />
+                      )}
+                    </>
+                  )}
                 </ComboboxOption>
               ))}
             </ComboboxOptions>
@@ -89,12 +106,16 @@ export default function StockChart({ symbol }: { symbol: string }) {
         </div>
       </Combobox>
 
-      {/* Chart */}
       <div className="w-full max-w-screen-2xl h-100 bg-white shadow-md rounded-lg p-2 mt-4">
-        <h2 className="text-xl font-bold mb-2">IDX {selectedSymbol}</h2>
+        <h2 className="text-xl font-bold mb-2">
+          Harga {selectedSymbol} di pasar saham saat ini
+        </h2>
+        <small className="text-red-600 font-thin">
+          *Pergerakan chart di update dalam 1 menit
+        </small>
         <div className="w-full h-full ml-2">
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={realTimeData} margin={{ left: 20 }}>
+            <ComposedChart data={realTimeData} margin={{ left: 20 }}>
               <defs>
                 <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#ED2D56" stopOpacity={0.8} />
@@ -102,11 +123,13 @@ export default function StockChart({ symbol }: { symbol: string }) {
                 </linearGradient>
               </defs>
 
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+              <CartesianGrid strokeDasharray="5 5" opacity={0.7} />
               <XAxis dataKey="time" />
               <YAxis domain={["auto", "auto"]} tickMargin={10} />
               <Tooltip />
+              <Legend />
 
+              {/* Area Chart */}
               <Area
                 type="monotone"
                 dataKey="price_idr"
@@ -116,15 +139,22 @@ export default function StockChart({ symbol }: { symbol: string }) {
                 dot={{ r: 4, strokeWidth: 2, fill: "#ED2D56" }}
                 animationDuration={500}
               />
+
+              {/* Line Chart */}
               <Line
                 type="monotone"
-                dataKey="price_usd"
+                dataKey="price_idr"
                 stroke="#007bff"
                 strokeWidth={2}
                 dot={{ r: 4, strokeWidth: 2, fill: "#007bff" }}
-                animationDuration={500}
               />
-            </LineChart>
+
+              {/* Bar Chart */}
+              <Bar dataKey="volume" fill="#82ca9d" barSize={30} />
+
+              {/* Scatter Plot */}
+              <Scatter dataKey="price_idr" fill="gold" />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>

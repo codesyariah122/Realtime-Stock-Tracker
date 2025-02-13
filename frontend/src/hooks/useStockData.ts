@@ -4,8 +4,9 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { BASE_URL } from '@utils/commons'
 
-const API_URL = "http://localhost:8000";
+const API_URL = BASE_URL;
 
 // export function useStockData(symbol: string) {
 //   const [realTimeData, setRealTimeData] = useState<{ time: string; price_idr: number }[]>([]);
