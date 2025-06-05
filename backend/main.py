@@ -80,8 +80,10 @@ async def get_stock_price(symbol: str):
             return stock_data
 
         return {"error": "Data tidak ditemukan."}
+
     except YFRateLimitError:
-        return {"error": "Rate limit tercapai. Silakan coba beberapa saat lagi."}
+        print("Limit yfinance tercapai, fallback ke AlphaVantage...")
+        return await get_stock_price_alphavantage(symbol)  # <- Fallback
     except Exception as e:
         return {"error": f"Terjadi kesalahan: {str(e)}"}
     
