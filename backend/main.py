@@ -89,37 +89,28 @@ async def get_stock_price(symbol: str):
     
 """__For use alphavantage
 """
-# def get_usd_to_idr():
-#     url = f"{BASE_URL}?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=IDR&apikey={API_KEY}"
-#     response = requests.get(url).json()
+async def get_stock_price_alphavantage(symbol: str):
+    url = f"{BASE_URL}?function=TIME_SERIES_INTRADAY&symbol={symbol}&interval=1min&apikey={API_KEY}"
+    response = requests.get(url).json()
     
-#     try:
-#         exchange_rate = float(response["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
-#         return exchange_rate
-#     except KeyError:
-#         return None
-# async def get_stock_price(symbol: str):
-#     url = f"{BASE_URL}?function=TIME_SERIES_INTRADAY&symbol={symbol}&interval=1min&apikey={API_KEY}"
-#     response = requests.get(url).json()
+    print("API Response (AlphaVantage): ", response)
     
-#     print("API Response : ", response)
-    
-#     if "Time Series (1min)" in response:
-#         latest_time = sorted(response["Time Series (1min)"].keys())[-1]
-#         price_usd = float(response["Time Series (1min)"][latest_time]["1. open"])
+    if "Time Series (1min)" in response:
+        latest_time = sorted(response["Time Series (1min)"].keys())[-1]
+        price_usd = float(response["Time Series (1min)"][latest_time]["1. open"])
         
-#         # Konversi ke IDR
-#         exchange_rate = get_usd_to_idr()
-#         price_idr = price_usd * exchange_rate if exchange_rate else None
+        # Konversi ke IDR
+        exchange_rate = get_usd_to_idr()
+        price_idr = price_usd * exchange_rate if exchange_rate else None
         
-#         return {
-#             "symbol": symbol,
-#             "time": latest_time,
-#             "price_usd": price_usd,
-#             "price_idr": price_idr
-#         }
+        return {
+            "symbol": symbol,
+            "time": latest_time,
+            "price_usd": price_usd,
+            "price_idr": price_idr
+        }
     
-#     return {"error": "Data tidak ditemukan atau API limit tercapai."}
+    return {"error": "Data tidak ditemukan atau API limit tercapai."}
 
 @app.get("/stock/{symbol}")
 async def stock_endpoint(symbol: str):
