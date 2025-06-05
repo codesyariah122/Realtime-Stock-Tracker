@@ -17,8 +17,10 @@ cache = TTLCache(maxsize=50, ttl=3600)
 
 load_dotenv()
 
-API_KEY = os.getenv("API_KEY")
-BASE_URL = os.getenv("BASE_URL")
+# API_KEY = os.getenv("API_KEY")
+# BASE_URL = os.getenv("BASE_URL")
+API_KEY = "2WXV5KFV2GPX8NUV"
+BASE_URL = "https://www.alphavantage.co/query"
 
 app = FastAPI()
 
