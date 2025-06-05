@@ -5,6 +5,7 @@
 
 import os
 import yfinance as yf
+from yfinance.exceptions import YFRateLimitError
 from cachetools import TTLCache
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -57,27 +58,32 @@ async def get_stock_price(symbol: str):
     if symbol in cache:
         return cache[symbol]
 
-    stock = yf.Ticker(symbol)
-    hist = stock.history(period="1d", interval="1m")
+    try:
+        stock = yf.Ticker(symbol)
+        hist = stock.history(period="1d", interval="1m")
 
-    if not hist.empty:
-        latest = hist.iloc[-1]
-        price_usd = latest["Open"]
+        if not hist.empty:
+            latest = hist.iloc[-1]
+            price_usd = latest["Open"]
 
-        exchange_rate = get_usd_to_idr()
-        price_idr = price_usd * exchange_rate if exchange_rate else None
+            exchange_rate = get_usd_to_idr()
+            price_idr = price_usd * exchange_rate if exchange_rate else None
 
-        stock_data = {
-            "symbol": symbol,
-            "time": latest.name.strftime("%Y-%m-%d %H:%M:%S"),
-            "price_usd": price_usd,
-            "price_idr": price_idr,
-        }
+            stock_data = {
+                "symbol": symbol,
+                "time": latest.name.strftime("%Y-%m-%d %H:%M:%S"),
+                "price_usd": price_usd,
+                "price_idr": price_idr,
+            }
 
-        cache[symbol] = stock_data
-        return stock_data
+            cache[symbol] = stock_data
+            return stock_data
 
-    return {"error": "Data tidak ditemukan."}
+        return {"error": "Data tidak ditemukan."}
+    except YFRateLimitError:
+        return {"error": "Rate limit tercapai. Silakan coba beberapa saat lagi."}
+    except Exception as e:
+        return {"error": f"Terjadi kesalahan: {str(e)}"}
     
 """__For use alphavantage
 """
