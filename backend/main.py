@@ -4,6 +4,7 @@
 '''
 
 import os
+import time
 import yfinance as yf
 from yfinance.exceptions import YFRateLimitError
 from cachetools import TTLCache
@@ -12,6 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import requests
 import asyncio
 from dotenv import load_dotenv
+
+alphavantage_cache = TTLCache(maxsize=50, ttl=60)
 
 cache = TTLCache(maxsize=50, ttl=3600) 
 
@@ -92,27 +95,35 @@ async def get_stock_price(symbol: str):
 """__For use alphavantage
 """
 async def get_stock_price_alphavantage(symbol: str):
+    if symbol in alphavantage_cache:
+        return alphavantage_cache[symbol]
+
     url = f"{BASE_URL}?function=TIME_SERIES_INTRADAY&symbol={symbol}&interval=1min&apikey={API_KEY}"
     response = requests.get(url).json()
-    
+
     print("API Response (AlphaVantage): ", response)
-    
+
+    if "Note" in response:
+        return {"error": "Rate limit AlphaVantage tercapai. Coba lagi sebentar lagi."}
+
     if "Time Series (1min)" in response:
         latest_time = sorted(response["Time Series (1min)"].keys())[-1]
         price_usd = float(response["Time Series (1min)"][latest_time]["1. open"])
-        
-        # Konversi ke IDR
+
         exchange_rate = get_usd_to_idr()
         price_idr = price_usd * exchange_rate if exchange_rate else None
-        
-        return {
+
+        result = {
             "symbol": symbol,
             "time": latest_time,
             "price_usd": price_usd,
             "price_idr": price_idr
         }
-    
-    return {"error": "Data tidak ditemukan atau API limit tercapai."}
+
+        alphavantage_cache[symbol] = result  # Simpan cache selama 1 menit
+        return result
+
+    return {"error": "Data tidak ditemukan atau API limit AlphaVantage tercapai."}
 
 @app.get("/stock/{symbol}")
 async def stock_endpoint(symbol: str):
